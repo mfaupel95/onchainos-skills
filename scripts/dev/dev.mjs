@@ -208,18 +208,31 @@ function updateCodexPath() {
 }
 
 function section(text, name) {
-  const match = text.match(new RegExp(`^\\[${name.replaceAll(".", "\\.")}\\]\\n([\\s\\S]*?)(?=^\\[|$)`, "m"));
+  const match = sectionMatch(text, name);
   return match?.[1] || "";
 }
 
+function sectionMatch(text, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // Unlike $, this end assertion cannot match an intermediate line ending.
+  return text.match(new RegExp(`^\\[${escaped}\\]\\n([\\s\\S]*?)(?=^\\[|(?![\\s\\S]))`, "m"));
+}
+
 function replaceInSection(text, name, pattern, replacement) {
-  const body = section(text, name);
-  return text.replace(body, body.replace(pattern, replacement));
+  const match = sectionMatch(text, name);
+  if (!match) return text;
+  const body = match[1];
+  const start = match.index + match[0].length - body.length;
+  return text.slice(0, start) + body.replace(pattern, replacement) + text.slice(start + body.length);
 }
 
 function insertInSection(text, name, line) {
-  const body = section(text, name);
-  return text.replace(body, `${body.trimEnd()}\n${line}\n`);
+  const match = sectionMatch(text, name);
+  if (!match) return text;
+  const body = match[1];
+  const start = match.index + match[0].length - body.length;
+  const trimmed = body.trimEnd();
+  return text.slice(0, start) + `${trimmed ? `${trimmed}\n` : ""}${line}\n` + text.slice(start + body.length);
 }
 
 function init() {
