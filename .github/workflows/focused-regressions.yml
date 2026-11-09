@@ -1,0 +1,22 @@
+name: Focused offline regressions
+on:
+  pull_request:
+  push:
+    branches: ["hermes/ci-C9-20261109", "main"]
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run synthetic offline regressions
+        run: |
+          node --test scripts/dev/dev.test.mjs
